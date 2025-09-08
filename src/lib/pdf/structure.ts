@@ -1,39 +1,115 @@
-export type PdfStructure = {
-  version: 1;
-  document: {
-    title?: string | null;
-    author?: string | null;
-    subject?: string | null;
-    keywords?: string[] | null;
-    creator?: string | null;
-    producer?: string | null;
-    creationDate?: string | null;
-    modificationDate?: string | null;
-    numPages: number;
-  };
-  pages: Array<{
-    pageNumber: number;
-    width?: number;
-    height?: number;
-    textBlocks: Array<{
-      str: string;
-      x?: number;
-      y?: number;
-      fontName?: string;
-      fontSize?: number;
-      dir?: "ltr" | "rtl" | "ttb" | "btt" | string;
-    }>;
-  }>;
-  original?: {
-    base64?: string; // Original file for exact reconstruction
-    fileName?: string;
-    contentType?: string;
-    byteLength?: number;
-  };
+export type PdfXmlStructure = {
+  fileName: string;
+  xmlContent: string;
 };
 
-export function stringifyPdfStructure(structure: PdfStructure): string {
-  return JSON.stringify(structure, null, 2);
+export type TextBlock = {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize: number;
+  fontFamily: string;
+  fontWeight: string;
+  fontStyle: string;
+  color: string;
+  rotation: number;
+  direction: string;
+  hasEOL: boolean;
+};
+
+export type ImageBlock = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  dataUrl?: string;
+  description?: string;
+};
+
+export type PageData = {
+  pageNumber: number;
+  width: number;
+  height: number;
+  textBlocks: TextBlock[];
+  images: ImageBlock[];
+  background?: string;
+};
+
+export function createPdfXml(
+  fileName: string,
+  metadata: {
+    title?: string;
+    author?: string;
+    subject?: string;
+    creator?: string;
+    producer?: string;
+    creationDate?: string;
+    modificationDate?: string;
+    numPages: number;
+  },
+  pages: PageData[]
+): string {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<pdf-document>
+  <metadata>
+    <title>${escapeXml(metadata.title || '')}</title>
+    <author>${escapeXml(metadata.author || '')}</author>
+    <subject>${escapeXml(metadata.subject || '')}</subject>
+    <creator>${escapeXml(metadata.creator || '')}</creator>
+    <producer>${escapeXml(metadata.producer || '')}</producer>
+    <creation-date>${escapeXml(metadata.creationDate || '')}</creation-date>
+    <modification-date>${escapeXml(metadata.modificationDate || '')}</modification-date>
+    <page-count>${metadata.numPages}</page-count>
+  </metadata>
+  <pages>
+    ${pages.map(page => `
+    <page number="${page.pageNumber}" width="${page.width}" height="${page.height}">
+      <text-blocks>
+        ${page.textBlocks.map(block => `
+        <text-block 
+          x="${block.x}" 
+          y="${block.y}" 
+          width="${block.width}" 
+          height="${block.height}"
+          font-size="${block.fontSize}"
+          font-family="${escapeXml(block.fontFamily)}"
+          font-weight="${block.fontWeight}"
+          font-style="${block.fontStyle}"
+          color="${escapeXml(block.color)}"
+          rotation="${block.rotation}"
+          direction="${escapeXml(block.direction)}"
+          has-eol="${block.hasEOL}">
+          ${escapeXml(block.text)}
+        </text-block>`).join('')}
+      </text-blocks>
+      ${page.images && page.images.length > 0 ? `
+      <images>
+        ${page.images.map(img => `
+        <image 
+          x="${img.x}" 
+          y="${img.y}" 
+          width="${img.width}" 
+          height="${img.height}"
+          rotation="${img.rotation}"
+          ${img.dataUrl ? `data-url="${escapeXml(img.dataUrl)}"` : ''}
+          ${img.description ? `description="${escapeXml(img.description)}"` : ''} />`).join('')}
+      </images>` : ''}
+      ${page.background ? `<background>${escapeXml(page.background)}</background>` : ''}
+    </page>`).join('')}
+  </pages>
+</pdf-document>`;
+
+  return xml;
 }
 
-
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}

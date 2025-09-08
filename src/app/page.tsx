@@ -7,13 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { RichPasteArea } from "@/components/rich-paste-area";
-import type { PdfStructure } from "@/lib/pdf/structure";
+import type { PdfXmlStructure } from "@/lib/pdf/structure";
 
 export default function Home() {
   const [pastedHtml, setPastedHtml] = useState<string>("");
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [structure, setStructure] = useState<PdfStructure | null>(null);
+  const [xmlStructure, setXmlStructure] = useState<PdfXmlStructure | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   return (
@@ -74,8 +74,8 @@ export default function Home() {
                     const data = await res.json().catch(() => ({}));
                     throw new Error(data.error || `Request failed (${res.status})`);
                   }
-                  const data = (await res.json()) as PdfStructure;
-                  setStructure(data);
+                  const data = (await res.json()) as PdfXmlStructure;
+                  setXmlStructure(data);
                 } catch (err: any) {
                   console.error(err);
                   alert(err?.message || "Failed to extract structure");
@@ -92,7 +92,7 @@ export default function Home() {
                 setPastedHtml("");
                 setFileNames([]);
                 setPdfFile(null);
-                setStructure(null);
+                setXmlStructure(null);
                 // Clear visual content by reloading route state
                 location.reload();
               }}
@@ -108,23 +108,23 @@ export default function Home() {
             </div>
           </div>
 
-          {structure ? (
+          {xmlStructure ? (
             <div className="space-y-2">
-              <Label>LLM-ready structure (JSON)</Label>
+              <Label>PDF Structure (XML)</Label>
               <div className="rounded-md border border-input p-3 text-xs max-h-80 overflow-auto bg-secondary">
-                <pre className="whitespace-pre-wrap break-words">{JSON.stringify(structure, null, 2)}</pre>
+                <pre className="whitespace-pre-wrap break-words">{xmlStructure.xmlContent}</pre>
               </div>
               <div>
                 <Button
                   variant="outline"
                   disabled={isLoading}
                   onClick={async () => {
-                    if (!structure) return;
+                    if (!xmlStructure) return;
                     try {
                       const res = await fetch("/api/pdf/generate", {
                         method: "POST",
                         headers: { "content-type": "application/json" },
-                        body: JSON.stringify(structure),
+                        body: JSON.stringify(xmlStructure),
                       });
                       if (!res.ok) {
                         const data = await res.json().catch(() => ({}));
@@ -134,18 +134,18 @@ export default function Home() {
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = structure.original?.fileName || "document.pdf";
+                      a.download = xmlStructure.fileName.replace('.pdf', '.xml');
                       document.body.appendChild(a);
                       a.click();
                       a.remove();
                       URL.revokeObjectURL(url);
                     } catch (err: any) {
                       console.error(err);
-                      alert(err?.message || "Failed to download PDF");
+                      alert(err?.message || "Failed to download XML");
                     }
                   }}
                 >
-                  Download
+                  Download XML
                 </Button>
               </div>
             </div>

@@ -1,27 +1,25 @@
 import { NextRequest } from "next/server";
-import type { PdfStructure } from "@/lib/pdf/structure";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const structure = (await req.json()) as PdfStructure;
-    if (!structure?.original?.base64) {
-      return new Response(JSON.stringify({ error: "Missing original base64" }), { status: 400 });
+    const { xmlContent } = await req.json();
+    
+    if (!xmlContent) {
+      return new Response(JSON.stringify({ error: "Missing XML content" }), { status: 400 });
     }
 
-    const buffer = Buffer.from(structure.original.base64, "base64");
-    return new Response(buffer, {
+    // For now, return the XML content as a downloadable file
+    // In the future, this could parse the XML and reconstruct a PDF
+    return new Response(xmlContent, {
       status: 200,
       headers: {
-        "content-type": structure.original.contentType || "application/pdf",
-        "content-disposition": `attachment; filename="${structure.original.fileName || "document.pdf"}"`,
+        "content-type": "application/xml",
+        "content-disposition": "attachment; filename=\"document.xml\"",
       },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err?.message || "Failed to generate PDF" }), { status: 500 });
+    return new Response(JSON.stringify({ error: err?.message || "Failed to generate file" }), { status: 500 });
   }
 }
-
-
-
