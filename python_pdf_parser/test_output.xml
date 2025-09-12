@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<pdf-document>
+  <metadata>
+    <title/>
+    <author/>
+    <subject/>
+    <creator/>
+    <producer/>
+    <creation-date/>
+    <modification-date/>
+    <page-count>1</page-count>
+  </metadata>
+  <pages>
+    <page number="1" width="595" height="842" extraction-method="pdfminer.six" char-count="8" text-length="164">
+      <page-info>
+        <dimensions width="595" height="842"/>
+        <content-stats text-blocks="8" images="0" shapes="0" characters="8"/>
+      </page-info>
+      <text-blocks count="8">
+        <text-block id="block-1-1" x="50.0" y="219.0" width="98.71" height="16.49" font-size="12.0" font-family="Helvetica" font-weight="normal" font-style="normal" color="#000000" rotation="0" direction="ltr">· Position mapping</text-block>
+        <text-block id="block-1-2" x="50.0" y="202.52" width="82.02" height="16.49" font-size="12.0" font-family="Helvetica" font-weight="normal" font-style="normal" color="#000000" rotation="0" direction="ltr">· Color analysis</text-block>
+        <text-block id="block-1-3" x="50.0" y="186.03" width="82.72" height="16.49" font-size="12.0" font-family="Helvetica" font-weight="normal" font-style="normal" color="#000000" rotation="0" direction="ltr">· Font detection</text-block>
+        <text-block id="block-1-4" x="50.0" y="169.54" width="85.37" height="16.49" font-size="12.0" font-family="Helvetica" font-weight="normal" font-style="normal" color="#000000" rotation="0" direction="ltr">· Text extraction</text-block>
+        <text-block id="block-1-5" x="50.0" y="153.05" width="50.69" height="16.49" font-size="12.0" font-family="Helvetica" font-weight="normal" font-style="normal" color="#000000" rotation="0" direction="ltr">Features:</text-block>
+        <text-block id="block-1-6" x="50.0" y="120.08" width="301.44" height="16.49" font-size="12.0" font-family="Helvetica" font-weight="normal" font-style="normal" color="#000000" rotation="0" direction="ltr">This is a sample PDF created for testing the PDF parser.</text-block>
+        <text-block id="block-1-7" x="50.0" y="87.1" width="108.7" height="16.49" font-size="12.0" font-family="Helvetica" font-weight="normal" font-style="normal" color="#000000" rotation="0" direction="ltr">Test PDF Document</text-block>
+        <text-block id="block-1-8" x="50.0" y="30.65" width="134.03" height="24.73" font-size="18.0" font-family="Helvetica" font-weight="normal" font-style="normal" color="#3333cc" rotation="0" direction="ltr">PDF Parser Test</text-block>
+      </text-blocks>
+      <images count="0"/>
+    </page>
+  </pages>
+</pdf-document>

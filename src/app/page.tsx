@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { RichPasteArea } from "@/components/rich-paste-area";
 import type { PdfXmlStructure } from "@/lib/pdf/structure";
 
@@ -16,12 +14,63 @@ export default function Home() {
   const [xmlStructure, setXmlStructure] = useState<PdfXmlStructure | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const handleExtractPdfStructure = async (pdfFile: File | null) => {
+    if (!pdfFile) {
+      alert("Please select a PDF file first.");
+      return;
+    }
+    console.log("pdfFile", pdfFile);
+    setIsLoading(true);
+    try {
+      const form = new FormData();
+      form.append("file", pdfFile, pdfFile.name);
+      const res = await fetch("/api/pdf/structure", { method: "POST", body: form });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+      const data = (await res.json()) as PdfXmlStructure;
+      setXmlStructure(data);
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || "Failed to extract PDF structure");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const downloadXmlFile = async (xmlStructure: PdfXmlStructure) => {
+    if (!xmlStructure) return;
+    try {
+      const res = await fetch("/api/pdf/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(xmlStructure),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = xmlStructure.fileName.replace('.pdf', '.xml');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || "Failed to download XML");
+    }
+  };
   return (
     <div className="font-sans min-h-screen p-6 md:p-10">
       <div className="mx-auto w-full max-w-3xl">
-        <h1 className="text-2xl font-semibold mb-4">Authless Paste & Upload</h1>
+        <h1 className="text-2xl font-semibold mb-4">PDF Structure Extractor</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Paste text with formatting preserved or upload PDF files.
+          Upload PDF files to extract text, fonts, colors, positioning and structure as XML using Python-based parsing.
         </p>
 
         <div className="space-y-6">
@@ -61,30 +110,10 @@ export default function Home() {
             <Button
               disabled={isLoading}
               onClick={async () => {
-                if (!pdfFile) {
-                  alert("Please select a PDF file first.");
-                  return;
-                }
-                setIsLoading(true);
-                try {
-                  const form = new FormData();
-                  form.append("file", pdfFile, pdfFile.name);
-                  const res = await fetch("/api/pdf/structure", { method: "POST", body: form });
-                  if (!res.ok) {
-                    const data = await res.json().catch(() => ({}));
-                    throw new Error(data.error || `Request failed (${res.status})`);
-                  }
-                  const data = (await res.json()) as PdfXmlStructure;
-                  setXmlStructure(data);
-                } catch (err: any) {
-                  console.error(err);
-                  alert(err?.message || "Failed to extract structure");
-                } finally {
-                  setIsLoading(false);
-                }
+                handleExtractPdfStructure(pdfFile);
               }}
             >
-              Submit
+              {isLoading ? "Processing PDF..." : "Extract PDF Structure"}
             </Button>
             <Button
               variant="outline"
@@ -114,17 +143,30 @@ export default function Home() {
               <div className="rounded-md border border-input p-3 text-xs max-h-80 overflow-auto bg-secondary">
                 <pre className="whitespace-pre-wrap break-words">{xmlStructure.xmlContent}</pre>
               </div>
-              <div>
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   disabled={isLoading}
                   onClick={async () => {
+                    downloadXmlFile(xmlStructure);
+                  }}
+                >
+                  Download XML
+                </Button>
+                <Button
+                  disabled={isLoading}
+                  onClick={async () => {
                     if (!xmlStructure) return;
+                    setIsLoading(true);
                     try {
-                      const res = await fetch("/api/pdf/generate", {
+                      console.log("Converting XML to PDF...", xmlStructure.fileName);
+                      const res = await fetch("/api/pdf/xml-to-pdf", {
                         method: "POST",
                         headers: { "content-type": "application/json" },
-                        body: JSON.stringify(xmlStructure),
+                        body: JSON.stringify({
+                          xmlContent: xmlStructure.xmlContent,
+                          fileName: xmlStructure.fileName.replace('.pdf', '_converted.pdf')
+                        }),
                       });
                       if (!res.ok) {
                         const data = await res.json().catch(() => ({}));
@@ -134,18 +176,21 @@ export default function Home() {
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = xmlStructure.fileName.replace('.pdf', '.xml');
+                      a.download = xmlStructure.fileName.replace('.pdf', '_converted.pdf');
                       document.body.appendChild(a);
                       a.click();
                       a.remove();
                       URL.revokeObjectURL(url);
+                      console.log("PDF conversion completed successfully");
                     } catch (err: any) {
                       console.error(err);
-                      alert(err?.message || "Failed to download XML");
+                      alert(err?.message || "Failed to convert XML to PDF");
+                    } finally {
+                      setIsLoading(false);
                     }
                   }}
                 >
-                  Download XML
+                  {isLoading ? "Converting..." : "Convert XML to PDF"}
                 </Button>
               </div>
             </div>

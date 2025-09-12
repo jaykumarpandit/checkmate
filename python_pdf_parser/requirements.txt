@@ -1,0 +1,9 @@
+# PDF Processing Dependencies
+pdfminer.six==20221105
+PyMuPDF==1.23.8
+
+# PDF Generation
+reportlab==4.0.4
+
+# Additional utilities
+pillow==10.0.1

@@ -36,6 +36,10 @@ export type PageData = {
   textBlocks: TextBlock[];
   images: ImageBlock[];
   background?: string;
+  extractionMethod?: string;
+  textLength?: number;
+  lineCount?: number;
+  hasContent?: boolean;
 };
 
 export function createPdfXml(
@@ -66,10 +70,29 @@ export function createPdfXml(
   </metadata>
   <pages>
     ${pages.map(page => `
-    <page number="${page.pageNumber}" width="${page.width}" height="${page.height}">
-      <text-blocks>
-        ${page.textBlocks.map(block => `
+    <page 
+      number="${page.pageNumber}" 
+      width="${page.width}" 
+      height="${page.height}"
+      extraction-method="${escapeXml(page.extractionMethod || 'unknown')}"
+      text-length="${page.textLength || 0}"
+      line-count="${page.lineCount || 0}"
+      has-content="${page.hasContent || false}">
+      
+      <page-info>
+        <dimensions width="${page.width}" height="${page.height}" />
+        <content-stats 
+          text-length="${page.textLength || 0}" 
+          line-count="${page.lineCount || 0}" 
+          text-blocks="${page.textBlocks.length}"
+          images="${page.images?.length || 0}" />
+        <extraction-details method="${escapeXml(page.extractionMethod || 'unknown')}" />
+      </page-info>
+      
+      <text-blocks count="${page.textBlocks.length}">
+        ${page.textBlocks.map((block, index) => `
         <text-block 
+          id="block-${page.pageNumber}-${index + 1}"
           x="${block.x}" 
           y="${block.y}" 
           width="${block.width}" 
@@ -81,14 +104,17 @@ export function createPdfXml(
           color="${escapeXml(block.color)}"
           rotation="${block.rotation}"
           direction="${escapeXml(block.direction)}"
-          has-eol="${block.hasEOL}">
+          has-eol="${block.hasEOL}"
+          text-length="${block.text.length}">
           ${escapeXml(block.text)}
         </text-block>`).join('')}
       </text-blocks>
+      
       ${page.images && page.images.length > 0 ? `
-      <images>
-        ${page.images.map(img => `
+      <images count="${page.images.length}">
+        ${page.images.map((img, index) => `
         <image 
+          id="image-${page.pageNumber}-${index + 1}"
           x="${img.x}" 
           y="${img.y}" 
           width="${img.width}" 
@@ -96,8 +122,10 @@ export function createPdfXml(
           rotation="${img.rotation}"
           ${img.dataUrl ? `data-url="${escapeXml(img.dataUrl)}"` : ''}
           ${img.description ? `description="${escapeXml(img.description)}"` : ''} />`).join('')}
-      </images>` : ''}
+      </images>` : '<images count="0" />'}
+      
       ${page.background ? `<background>${escapeXml(page.background)}</background>` : ''}
+      
     </page>`).join('')}
   </pages>
 </pdf-document>`;
